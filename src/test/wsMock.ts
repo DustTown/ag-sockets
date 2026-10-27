@@ -48,6 +48,7 @@ export class MockWebSocketServer extends MockEventEmitter {
 export class MockWebSocket extends MockEventEmitter {
 	static Server = MockWebSocketServer;
 	upgradeReq = { url: '?hash=123', headers: { foo: 'bar' } };
+	bufferedAmount = 0;
 	constructor() {
 		super();
 	}

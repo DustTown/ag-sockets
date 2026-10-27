@@ -15,6 +15,7 @@ export interface ClientState extends RemoteState {
 	lastSendTime: number;
 	token: Token | undefined;
 	ping(): void;
+	isBufferOverflow(): boolean;
 	client: SocketServerClient;
 }
 
@@ -88,6 +89,7 @@ export interface InternalServer {
 	tokenLifetime: number;
 	clientLimit: number;
 	transferLimit: number;
+	maxBufferedAmount: number;
 	serverMethods: MethodDef[];
 	clientMethods: string[];
 	rateLimits: (RateLimitDef | undefined)[];
@@ -118,6 +120,8 @@ export interface ServerOptions extends CommonOptions {
 	perMessageDeflate?: boolean;
 	/** transfer limit (bytes per second) */
 	transferLimit?: number;
+	/** disconnect client when more than this many bytes are waiting to be sent to it (checked on send and on ping), 0 disables */
+	maxBufferedAmount?: number;
 	/** custom client verification method */
 	verifyClient?: (req: IncomingMessage) => boolean;
 	/** allows to modify client object */

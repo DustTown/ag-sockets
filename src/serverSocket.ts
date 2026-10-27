@@ -235,6 +235,7 @@ function createInternalServer(createServer: CreateServerMethod, options: ServerO
 		tokenLifetime: options.tokenLifetime ?? 0,
 		clientLimit: options.clientLimit ?? 0,
 		transferLimit: options.transferLimit ?? 0,
+		maxBufferedAmount: options.maxBufferedAmount ?? 0,
 		verifyClient,
 		createClient,
 		timingStart,
@@ -303,6 +304,8 @@ function createInternalServer(createServer: CreateServerMethod, options: ServerO
 				try {
 					if (c.lastMessageTime < timeoutThreshold) {
 						c.client.disconnect(true, false, 'timeout');
+					} else if (c.isBufferOverflow()) {
+						c.client.disconnect(true, false, 'send buffer overflow');
 					} else if (c.lastSendTime < threshold) {
 						c.ping();
 						if (onSend) onSend(-1, 'PING', 0, false);
@@ -431,6 +434,10 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 		ping() {
 			socket.send('');
 		},
+		isBufferOverflow() {
+			const limit = server.maxBufferedAmount;
+			return !!limit && (socket.bufferedAmount || 0) > limit;
+		},
 		client: createClient({
 			id: server.currentClientId++,
 			tokenId: token ? token.id : undefined,
@@ -507,6 +514,10 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 		}
 
 		obj.lastSendTime = Date.now();
+
+		if (isConnected && obj.isBufferOverflow()) {
+			obj.client.disconnect(true, false, 'send buffer overflow');
+		}
 	}
 
 	const handleResult2: HandleResult = (funcId, funcBinary, result, messageId) => {

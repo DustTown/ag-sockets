@@ -272,6 +272,64 @@ describe('serverSocket', () => {
 			});
 		});
 
+		describe('(max buffered amount)', () => {
+			let server: Server1;
+			let socket: ReturnType<typeof createServer> | undefined;
+
+			function create(options: Partial<ServerOptions> = {}) {
+				socket = createServer({} as any, Server1, Client1, c => server = new Server1(c), { ws, hash: '123', ...options }, emptyErrorHandler());
+			}
+
+			afterEach(() => {
+				socket && socket.close();
+				socket = undefined;
+			});
+
+			it('does not disconnect client when send buffer is below the limit', async () => {
+				create({ maxBufferedAmount: 1000 });
+				const client = await getLastServer().connectClient();
+				const terminate = stub(client, 'terminate');
+
+				client.bufferedAmount = 1000;
+				server.client.hi('test');
+
+				assert.notCalled(terminate);
+			});
+
+			it('disconnects client when send buffer exceeds the limit', async () => {
+				create({ maxBufferedAmount: 1000 });
+				const client = await getLastServer().connectClient();
+				const terminate = stub(client, 'terminate');
+
+				client.bufferedAmount = 1001;
+				server.client.hi('test');
+
+				assert.calledOnce(terminate);
+			});
+
+			it('does not limit send buffer by default', async () => {
+				create();
+				const client = await getLastServer().connectClient();
+				const terminate = stub(client, 'terminate');
+
+				client.bufferedAmount = 1000000000;
+				server.client.hi('test');
+
+				assert.notCalled(terminate);
+			});
+
+			it('disconnects client with stuck send buffer on ping', async () => {
+				create({ maxBufferedAmount: 1000, pingInterval: 10 });
+				const client = await getLastServer().connectClient();
+				const terminate = stub(client, 'terminate');
+
+				client.bufferedAmount = 2000;
+				await delay(50);
+
+				assert.calledOnce(terminate);
+			});
+		});
+
 		describe('(transfer limit)', () => {
 			let errorHandler: ErrorHandler;
 			let server: Server1;
