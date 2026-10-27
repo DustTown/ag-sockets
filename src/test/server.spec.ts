@@ -401,6 +401,16 @@ describe('serverSocket', () => {
 			expect(server.options.perMessageDeflate).false;
 		});
 
+		it('does not pass maxPayload to websocket server by default', () => {
+			expect('maxPayload' in server.options).false;
+		});
+
+		it('passes maxPayload option to websocket server', () => {
+			createServerHost(httpServer, { ws, path: '/foo', maxPayload: 65536, errorHandler });
+
+			expect(getLastServer().options.maxPayload).equal(65536);
+		});
+
 		it('connects client', async () => {
 			await server.connectClient();
 		});

@@ -53,6 +53,8 @@ export interface GlobalConfig {
 	path?: string;
 	errorHandler?: ErrorHandler;
 	perMessageDeflate?: boolean;
+	/** max size of a single message in bytes, websocket library default if not specified */
+	maxPayload?: number;
 	log?: Logger;
 	ws?: any;
 	errorCode?: number;

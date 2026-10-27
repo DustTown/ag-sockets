@@ -43,6 +43,7 @@ export function createServerHost(httpServer: HttpServer | undefined, globalConfi
 		log = console.log.bind(console),
 		errorHandler = defaultErrorHandler,
 		perMessageDeflate = true,
+		maxPayload,
 		errorCode = 400,
 		errorName = 'Bad Request',
 		nativePing = 0,
@@ -55,6 +56,8 @@ export function createServerHost(httpServer: HttpServer | undefined, globalConfi
 		noServer: !httpServer,
 		path,
 		perMessageDeflate,
+		// ws replaces its own default even by an undefined value
+		...(maxPayload !== undefined ? { maxPayload } : {}),
 		verifyClient,
 	});
 
