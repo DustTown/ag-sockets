@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check the tag matches the package version
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npx mocha --timeout 10000 -R dot dist/test
+
+      - name: Pack
+        run: npm pack
+
+      - name: Publish the tarball to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TARBALL=$(ls ag-sockets-*.tgz)
+          SUM=$(sha256sum "$TARBALL" | cut -d' ' -f1)
+          gh release create "$GITHUB_REF_NAME" "$TARBALL" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes "sha256: $SUM" \
+            --prerelease="$(case "$GITHUB_REF_NAME" in *-*) echo true;; *) echo false;; esac)"
