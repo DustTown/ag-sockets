@@ -528,6 +528,52 @@ describe('serverSocket', () => {
 			assert.calledWithMatch(handleError as any, match.any, error);
 		});
 
+		describe('(ws 8 events)', () => {
+			it('calls method for text message delivered as a buffer', async () => {
+				const client = await server.connectClient();
+				const hello = stub(servers[0], 'hello');
+
+				client.invoke('message', Buffer.from('[0,"hello there"]'), false);
+
+				assert.calledWith(hello, 'hello there');
+			});
+
+			it('marks client as supporting binary on binary message', async () => {
+				const client = await server.connectClient();
+
+				client.invoke('message', Buffer.alloc(0), true);
+
+				expect(serverSocket.clients[0].supportsBinary).true;
+			});
+
+			it('does not mark client as supporting binary on text message', async () => {
+				const client = await server.connectClient();
+
+				client.invoke('message', Buffer.from('[0,"hello"]'), false);
+
+				expect(serverSocket.clients[0].supportsBinary).false;
+			});
+
+			it('rejects text message delivered as a buffer when binary is forced', async () => {
+				createServer({} as any, Server1, Client1, c => new Server1(c), { ws, forceBinary: true, hash: '123' }, emptyErrorHandler());
+				const client = await getLastServer().connectClient();
+				const terminate = stub(client, 'terminate');
+
+				client.invoke('message', Buffer.from('[0,"hello"]'), false);
+
+				assert.calledOnce(terminate);
+			});
+
+			it('passes close reason as a string', async () => {
+				const client = await server.connectClient();
+				const disconnected = stub(servers[0], 'disconnected') as SinonStub;
+
+				client.invoke('close', 1000, Buffer.from('bye'));
+
+				assert.calledWith(disconnected, 1000, 'bye');
+			});
+		});
+
 		it('reports exception from server.disconnected()', async () => {
 			const error = new Error('test');
 			onServer = s => stub(s, 'disconnected').throws(error);

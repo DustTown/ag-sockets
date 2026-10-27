@@ -525,10 +525,14 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 	};
 
 	function serverActionsCreated(serverActions: SocketServer) {
-		socket.on('message', (message: string | Buffer | ArrayBuffer, flags?: { binary: boolean; }) => {
+		socket.on('message', (rawMessage: string | Buffer | ArrayBuffer, flags?: { binary: boolean; } | boolean) => {
 			try {
 				timingStart('packet');
 				if (transferLimitExceeded || !isConnected) return;
+
+				// ws 8 passes isBinary instead of flags and delivers text messages as buffers too
+				const isBinary = typeof flags === 'boolean' ? flags : !!(flags && flags.binary);
+				const message = (typeof flags === 'boolean' && !flags && rawMessage instanceof Buffer) ? rawMessage.toString() : rawMessage;
 
 				const messageLength = getLength(message);
 				bytesReceived += messageLength;
@@ -566,7 +570,7 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 				}
 
 				obj.lastMessageTime = Date.now();
-				obj.supportsBinary = obj.supportsBinary || !!(flags && flags.binary);
+				obj.supportsBinary = obj.supportsBinary || isBinary;
 
 				if (reader) {
 					try {
@@ -631,8 +635,11 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 
 	let closed = false;
 
-	function close(code: number, reason: string) {
+	function close(code: number, closeFrameReason: string | Buffer) {
 		if (closed) return;
+
+		// ws 8 passes the close reason as a buffer
+		const reason = typeof closeFrameReason === 'string' ? closeFrameReason : closeFrameReason ? closeFrameReason.toString() : '';
 
 		try {
 			timingStart('socket closed');
