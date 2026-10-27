@@ -26,7 +26,7 @@ jobs:
 
       - run: npm run build
 
-      - run: npx mocha --timeout 10000 -R dot dist/test
+      - run: npx mocha --timeout 10000 -R dot --exit dist/test
 
       - name: Pack
         run: npm pack
