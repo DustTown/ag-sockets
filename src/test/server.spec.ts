@@ -307,6 +307,17 @@ describe('serverSocket', () => {
 				assert.calledOnce(terminate);
 			});
 
+			it('exposes the send buffer size of the client', async () => {
+				create();
+				const client = await getLastServer().connectClient();
+
+				expect(server.client.bufferedAmount()).equal(0);
+
+				client.bufferedAmount = 1234;
+
+				expect(server.client.bufferedAmount()).equal(1234);
+			});
+
 			it('does not limit send buffer by default', async () => {
 				create();
 				const client = await getLastServer().connectClient();

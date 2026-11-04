@@ -254,7 +254,7 @@ function createInternalServer(createServer: CreateServerMethod, options: ServerO
 
 	function handleResult(send: Send, obj: ClientState, funcId: number, funcBinary: boolean, result: Promise<any>, messageId: number) {
 		if (obj.batch) throw new Error('Handling result in the middle of packet batching');
-		
+
 		if (result && typeof result.then === 'function') {
 			result.then(result => {
 				try {
@@ -449,6 +449,9 @@ function connectClient(socket: ws, server: InternalServer, originalRequest: Orig
 			},
 			lastMessageTime() {
 				return obj.lastMessageTime;
+			},
+			bufferedAmount() {
+				return socket.bufferedAmount || 0;
 			},
 			disconnect(force = false, invalidateToken = false, reason = '') {
 				isConnected = false;

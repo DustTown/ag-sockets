@@ -13,6 +13,7 @@ export interface ClientExtensions {
 	transferLimit: number;
 	isConnected(): boolean;
 	lastMessageTime(): number;
+	bufferedAmount(): number;
 	disconnect(force?: boolean, invalidateToken?: boolean, reason?: string): void;
 	beginBatch(): void;
 	commitBatch(): void;
